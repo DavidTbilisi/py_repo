@@ -1,14 +1,20 @@
 import sqlite3
 from db import db
+from sqlalchemy import inspect
+
+def object_as_dict(obj):
+    if obj is not None:
+        return {c.key: getattr(obj, c.key)
+                for c in inspect(obj).mapper.column_attrs}
+    return None
 
 class User(db.Model):
     __tablename__ = "users"
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(30))
     password = db.Column(db.String(30))
 
-    def __init__(self, id, user, password):
-        self.id = id
+    def __init__(self, user, password):
         self.username = user
         self.password = password
 
@@ -23,36 +29,12 @@ class User(db.Model):
 
     @classmethod
     def find_by_username(cls, username):
-        conn = sqlite3.connect("data.sqlite")
-        c = conn.cursor()
-        c.execute("SELECT * FROM users WHERE username = ?", [username])
-        user = c.fetchone()
-        conn.close()
-        return cls(*user) if user else None
-
-    @classmethod
-    def find_by_user_id(cls, user_id):
-        conn = sqlite3.connect("data.sqlite")
-        c = conn.cursor()
-        c.execute("select * from users where id = ?", [user_id])
-        user = c.fetchone()
-        conn.close()
-        return cls(*user) if user else None
+        user = cls.query.filter_by(username=username).first()
+        print(user)
+        return object_as_dict(user)
 
     @classmethod
     def add(cls, user, password):
-        conn = sqlite3.connect("data.sqlite")
-        c = conn.cursor()
-        c.execute("SELECT id from users ORDER BY id DESC")
-        last_id = c.fetchone()[0]
-        c.execute("INSERT INTO users VALUES(?, ?, ?)", [last_id + 1, user, password])
-        conn.commit()
-        return True
+        db.session.add(cls(user, password))
+        db.commit()
 
-    @classmethod
-    def rm(cls, user_id):
-        conn = sqlite3.connect("data.sqlite")
-        c = conn.cursor()
-        c.execute("DELETE FROM users WHERE  id = ? ", [user_id])
-        conn.commit()
-        return True

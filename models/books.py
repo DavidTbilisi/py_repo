@@ -1,9 +1,16 @@
 import sqlite3
 from db import db
+from sqlalchemy import inspect
+
+def object_as_dict(obj):
+    if obj is not None:
+        return {c.key: getattr(obj, c.key)
+                for c in inspect(obj).mapper.column_attrs}
+    return None
 
 class Books(db.Model):
     __tablename__ = "books"
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(20))
     author = db.Column(db.String(30))
     genre = db.Column(db.String(25))
@@ -12,53 +19,26 @@ class Books(db.Model):
 
 
     @classmethod
-    def find_by_name(cls):
-        pass
-
-    @classmethod
-    def greatest_id(cls):
-        conn = sqlite3.connect("data.sqlite")
-        c = conn.cursor()
-        c.execute("select id from books order by id desc")
-        ret = c.fetchone()
-        conn.close()
-        return ret[0]
+    def find_by_name(cls, name):
+        book = cls.query.filtery_by(name=name).first()
+        return object_as_dict(book)
 
     @classmethod
     def find_by_id(cls, item_id):
-        conn = sqlite3.connect("data.sqlite")
-        c = conn.cursor()
-        c.execute("select * from books where id = ?", [item_id])
-        ret = c.fetchone()
-        conn.close()
-        return ret
+        book = cls.query.filter_by(id=item_id).first()
+        return object_as_dict(book)
 
+    # TODO: update
     @classmethod
-    def insert(cls, item):
-        conn = sqlite3.connect("data.sqlite")
-        c = conn.cursor()
-        vals = list(item.values())
-        vals = [cls.greatest_id()+1] + vals
-        c.execute("INSERT INTO books VALUES(?, ?, ?, ?, ?, ?)", vals)
-        conn.commit()
-        conn.close()
-
-    @classmethod
-    def update(cls, book, item_id):
-        conn = sqlite3.connect("data.sqlite")
-        c = conn.cursor()
-        c.execute("UPDATE books SET  name = ?, author = ?, genre = ?, publishDate = ?, quantity = ? where id = ?",
-                  [book['name'], book['author'], book['genre'], book['publishDate'], book['quantity'], item_id])
-        conn.commit()
-        conn.close()
+    def save(cls, item):
+        cls.query.session.add(cls(**item))
+        db.session.commit()
 
     @classmethod
     def delete(cls, item_id):
-        conn = sqlite3.connect("data.sqlite")
-        c = conn.cursor()
-        c.execute("DELETE FROM books WHERE id = ?", [item_id])
-        conn.commit()
-        conn.close()
+        to_del = cls.query.filter_by(id=item_id).first()
+        db.session.delete(to_del)
+        db.session.commit()
 
 
 class AllBooks:

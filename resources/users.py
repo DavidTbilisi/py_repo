@@ -15,9 +15,16 @@ class RegisterUser(Resource):
     def post(self):
         parsed = RegisterUser.u_prs.parse_args()
         user = UserModel.find_by_username(parsed.username)
+
         # get user
         if user:
             return {"message": "Already Registered"}, 400
         else:
+            print("user model add works")
             UserModel.add(parsed.username, parsed.password)
             return {"message": "User was added successfully"}, 200
+
+    # def get(self):
+    #     parsed = RegisterUser.u_prs.parse_args()
+    #     user = UserModel.find_by_username(parsed.username)
+    #     return user
