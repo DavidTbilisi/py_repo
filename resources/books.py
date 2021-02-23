@@ -10,11 +10,7 @@ class Item(Resource):
     keys = ("name", "author", "genre", "publishDate", "quantity")
 
     i_prs = reqparse.RequestParser()
-    # i_prs.add_argument("id",
-    #                    type=int,
-    #                    required=True,
-    #                    help="parameter should be Integer"
-    #                    )
+
     i_prs.add_argument("name",
                        type=str,
                        required=True,
@@ -44,8 +40,20 @@ class Item(Resource):
     def get(self, item_id=None):
         ret = BooksModel.find_by_id(item_id)
         if ret is not None:
-            return jsonify(ret)
+            return jsonify(ret.json())
         return {"message": f"Item with ID {item_id} was not found"}, 200
+
+    @jwt_required()
+    def post(self, item_id):
+        ret = BooksModel.find_by_id(item_id)
+
+        if ret is not None:
+            return {"message": f"ID {item_id} უკვე არსებობს სიაში"}, 400
+
+        book = Item.i_prs.parse_args()
+        bm = BooksModel(**book)
+        bm.save()
+        return {"message": f"book {item_id} is added successfully"}, 200
 
     @jwt_required()
     def delete(self, item_id):
@@ -57,29 +65,25 @@ class Item(Resource):
 
     @jwt_required()
     def put(self, item_id):
-
         book = Item.i_prs.parse_args()
-        # update
-        ret = BooksModel.find_by_id(item_id)
-        # TODO: update in model
-        if ret is not None:
-            BooksModel.save(ret)
+        book_from_db = BooksModel.find_by_id(item_id)
+        print(book_from_db)
+        if book_from_db is not None:
+            # update
+            book_from_db.name = book.name
+            book_from_db.author = book.author
+            book_from_db.genre = book.genre
+            book_from_db.publishdate = book.publishdate
+            book_from_db.quantity = book.quantity
+            book_from_db.save()
             return {"message": f"book {item_id} is updated successfully"}, 200
         # insert
         book = Item.i_prs.parse_args()
-        BooksModel.save(book)
+        bm = BooksModel(**book)
+        bm.save()
         return {"message": f"book {item_id} is added successfully"}, 200
 
-    @jwt_required()
-    def post(self, item_id):
-        ret = BooksModel.find_by_id(item_id)
 
-        if ret is not None:
-            return {"message": f"ID {item_id} უკვე არსებობს სიაში"}, 400
-
-        book = Item.i_prs.parse_args()
-        BooksModel.save(book)
-        return {"message": f"book {item_id} is added successfully"}, 200
 
 
 class ItemList(Resource):

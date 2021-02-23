@@ -29,7 +29,7 @@ end
 # unset irrelevant variables
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV "/home/david/Desktop/htdocs/htdocs/flask/venv"
+set -gx VIRTUAL_ENV "/opt/lampp2/htdocs/py_repo/venv"
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/bin" $PATH
